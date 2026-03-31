@@ -103,7 +103,8 @@ async def feishu_webhook(request: Request, bot_slug: str | None = None) -> dict:
 
     if message.chat_type == "group" and bot.require_mention:
         bot_info = await feishu_client.get_bot_info()
-        if bot_info.get("open_id") not in message.mention_ids:
+        valid_ids = {bot.app_id, bot_info.get("open_id"), bot_info.get("union_id")}
+        if not any(vid in message.mention_ids for vid in valid_ids if vid):
             return {"ok": True, "ignored": "mention_required"}
 
     route = route_for_bot(bot, message.text)

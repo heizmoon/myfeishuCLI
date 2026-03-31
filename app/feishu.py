@@ -157,9 +157,10 @@ def verify_token(payload: dict, verification_token: str) -> bool:
         return token == verification_token
 
     header = payload.get("header") or {}
-    event = payload.get("event") or {}
-    if event.get("tenant_key") or header:
-        return True
+    header_token = header.get("token")
+    if header_token:
+        return header_token == verification_token
+        
     return False
 
 
