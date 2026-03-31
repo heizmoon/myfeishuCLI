@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 
+from dotenv import dotenv_values
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -45,10 +46,22 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+dotenv_map = {
+    str(key): str(value)
+    for key, value in dotenv_values(".env").items()
+    if key is not None and value is not None
+}
+
+
+def _env_value(name: str, default: str = "") -> str:
+    value = os.getenv(name)
+    if value is not None and value != "":
+        return value
+    return dotenv_map.get(name, default)
 
 
 def _env_bool(name: str, default: bool) -> bool:
-    value = os.getenv(name)
+    value = _env_value(name)
     if value is None:
         return default
     return value.strip().lower() in {"1", "true", "yes", "on"}
@@ -71,15 +84,15 @@ def get_default_bot() -> BotProfile | None:
 
 def get_named_bot(slug: str) -> BotProfile | None:
     key = slug.strip().upper().replace("-", "_")
-    app_id = os.getenv(f"BOT_{key}_FEISHU_APP_ID", "").strip()
-    app_secret = os.getenv(f"BOT_{key}_FEISHU_APP_SECRET", "").strip()
-    verification_token = os.getenv(f"BOT_{key}_FEISHU_VERIFICATION_TOKEN", "").strip()
+    app_id = _env_value(f"BOT_{key}_FEISHU_APP_ID", "").strip()
+    app_secret = _env_value(f"BOT_{key}_FEISHU_APP_SECRET", "").strip()
+    verification_token = _env_value(f"BOT_{key}_FEISHU_VERIFICATION_TOKEN", "").strip()
     if not (app_id and app_secret and verification_token):
         return None
 
-    default_provider = os.getenv(f"BOT_{key}_DEFAULT_PROVIDER", "").strip() or settings.bot_default_provider
-    default_mode = os.getenv(f"BOT_{key}_DEFAULT_MODE", "").strip() or "text"
-    system_prompt = os.getenv(f"BOT_{key}_SYSTEM_PROMPT", "").strip() or settings.bot_system_prompt
+    default_provider = _env_value(f"BOT_{key}_DEFAULT_PROVIDER", "").strip() or settings.bot_default_provider
+    default_mode = _env_value(f"BOT_{key}_DEFAULT_MODE", "").strip() or "text"
+    system_prompt = _env_value(f"BOT_{key}_SYSTEM_PROMPT", "").strip() or settings.bot_system_prompt
     require_mention = _env_bool(f"BOT_{key}_REQUIRE_MENTION", True)
 
     return BotProfile(
