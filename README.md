@@ -2,8 +2,8 @@
 
 Supports two deployment styles:
 
-- Single bot: one Feishu bot, route by message prefix such as `gpt:` or `gemini:`
-- Multi bot: multiple Feishu bots in the same group, each with its own avatar and callback path
+- Multi bot: recommended. Multiple Feishu bots in the same group, each with its own avatar and callback path
+- Single bot: optional legacy mode if you still want prefix routing
 
 ## Single-bot commands
 
@@ -15,29 +15,25 @@ Supports two deployment styles:
 
 Create multiple Feishu apps, for example:
 
-- `GPT`
-- `Gemini`
-- `Painter`
+- `菲菲`
+- `小白`
 
 Point each app to a different callback path:
 
-- `https://bot.120061019.xyz/webhook/feishu/gpt`
-- `https://bot.120061019.xyz/webhook/feishu/gemini`
-- `https://bot.120061019.xyz/webhook/feishu/painter`
+- `https://bot.120061019.xyz/webhook/feishu/feifei`
+- `https://bot.120061019.xyz/webhook/feishu/xiaobai`
 
 Then configure matching environment variables:
 
-- `BOT_GPT_FEISHU_APP_ID`
-- `BOT_GPT_FEISHU_APP_SECRET`
-- `BOT_GPT_FEISHU_VERIFICATION_TOKEN`
-- `BOT_GEMINI_*`
-- `BOT_PAINTER_*`
+- `BOT_FEIFEI_FEISHU_APP_ID`
+- `BOT_FEIFEI_FEISHU_APP_SECRET`
+- `BOT_FEIFEI_FEISHU_VERIFICATION_TOKEN`
+- `BOT_XIAOBAI_*`
 
 Recommended defaults:
 
-- `BOT_GPT_DEFAULT_PROVIDER=openai`
-- `BOT_GEMINI_DEFAULT_PROVIDER=gemini`
-- `BOT_PAINTER_DEFAULT_MODE=image`
+- `BOT_FEIFEI_DEFAULT_PROVIDER=gemini`
+- `BOT_XIAOBAI_DEFAULT_MODE=image`
 
 In group chats, named bots only reply when they are `@` mentioned.
 
@@ -54,16 +50,16 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 - `OPENAI_API_KEY`
 - `GEMINI_API_KEY`
 
-For single-bot mode:
+For multi-bot mode:
+
+- `FEISHU_BOTS=feifei,xiaobai`
+- each `BOT_<NAME>_...` credential set
+
+Legacy single-bot mode only:
 
 - `FEISHU_APP_ID`
 - `FEISHU_APP_SECRET`
 - `FEISHU_VERIFICATION_TOKEN`
-
-For multi-bot mode:
-
-- `FEISHU_BOTS=gpt,gemini,painter`
-- each `BOT_<NAME>_...` credential set
 
 ## Example prompts
 
@@ -77,6 +73,5 @@ gemini-img: draw a shiba inu travel poster
 
 Multi bot:
 
-- `@GPT summarize this discussion`
-- `@Gemini give me a more aggressive plan`
-- `@Painter draw a shiba inu travel poster`
+- `@菲菲 summarize this discussion`
+- `@小白 draw a shiba inu travel poster`

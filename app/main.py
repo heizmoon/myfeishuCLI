@@ -48,7 +48,10 @@ def route_for_bot(bot: BotProfile, text: str) -> RouteResult:
 
 def get_bot_or_404(bot_slug: str | None) -> BotProfile:
     if not bot_slug:
-        return get_default_bot()
+        bot = get_default_bot()
+        if not bot:
+            raise HTTPException(status_code=404, detail="Default bot is not configured.")
+        return bot
 
     bot = get_named_bot(bot_slug)
     if not bot:
@@ -58,11 +61,15 @@ def get_bot_or_404(bot_slug: str | None) -> BotProfile:
 
 @app.get("/")
 async def index() -> dict:
+    default_bot = get_default_bot()
+    bots = [*get_enabled_bot_slugs()]
+    if default_bot:
+        bots = ["default", *bots]
     return {
         "ok": True,
         "service": "feishu-multi-model-bot",
         "providers": ["openai", "gemini"],
-        "bots": ["default", *get_enabled_bot_slugs()],
+        "bots": bots,
     }
 
 

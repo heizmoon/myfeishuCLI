@@ -54,7 +54,9 @@ def _env_bool(name: str, default: bool) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
-def get_default_bot() -> BotProfile:
+def get_default_bot() -> BotProfile | None:
+    if not (settings.feishu_app_id and settings.feishu_app_secret and settings.feishu_verification_token):
+        return None
     return BotProfile(
         slug="default",
         app_id=settings.feishu_app_id,
