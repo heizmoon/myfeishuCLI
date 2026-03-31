@@ -76,6 +76,50 @@ class FeishuClient:
         if data.get("code") != 0:
             raise FeishuAPIError(f"Failed to send message: {data}")
 
+    async def upload_image(self, image_bytes: bytes, image_name: str = "generated.png") -> str:
+        token = await self.get_tenant_access_token()
+        headers = {
+            "Authorization": f"Bearer {token}",
+        }
+        files = {
+            "image_type": (None, "message"),
+            "image": (image_name, image_bytes, "image/png"),
+        }
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.post(
+                f"{settings.feishu_base_url.rstrip('/')}/open-apis/im/v1/images",
+                headers=headers,
+                files=files,
+            )
+        response.raise_for_status()
+        data = response.json()
+        if data.get("code") != 0:
+            raise FeishuAPIError(f"Failed to upload image: {data}")
+        return data["data"]["image_key"]
+
+    async def send_image_message(self, chat_id: str, image_key: str) -> None:
+        token = await self.get_tenant_access_token()
+        payload = {
+            "receive_id": chat_id,
+            "msg_type": "image",
+            "content": json.dumps({"image_key": image_key}, ensure_ascii=False),
+        }
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(
+                f"{settings.feishu_base_url.rstrip('/')}/open-apis/im/v1/messages",
+                params={"receive_id_type": "chat_id"},
+                headers=headers,
+                json=payload,
+            )
+        response.raise_for_status()
+        data = response.json()
+        if data.get("code") != 0:
+            raise FeishuAPIError(f"Failed to send image message: {data}")
+
 
 def verify_token(payload: dict) -> bool:
     token = payload.get("token")

@@ -15,6 +15,7 @@ class Settings(BaseSettings):
 
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.5-flash"
+    gemini_image_model: str = "gemini-2.5-flash-image"
     gemini_base_url: str = "https://generativelanguage.googleapis.com"
 
     bot_default_provider: str = "openai"
