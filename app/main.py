@@ -5,10 +5,12 @@ from dataclasses import dataclass
 from fastapi import FastAPI, HTTPException, Request
 
 from app.config import BotProfile, get_default_bot, get_enabled_bot_slugs, get_named_bot, settings
+from app.dedupe import EventDedupeStore
 from app.feishu import FeishuClient, extract_message, verify_token
 from app.providers import ProviderError, ask_provider, generate_gemini_image
 
 app = FastAPI(title="Feishu Multi-Model Bot")
+dedupe_store = EventDedupeStore(settings.dedupe_db_path)
 
 
 @dataclass
@@ -91,6 +93,10 @@ async def feishu_webhook(request: Request, bot_slug: str | None = None) -> dict:
     message = extract_message(payload)
     if not message:
         return {"ok": True, "ignored": True}
+
+    dedupe_key = message.event_id or message.message_id
+    if dedupe_key and dedupe_store.seen_or_record(f"{bot.slug}:{dedupe_key}"):
+        return {"ok": True, "ignored": "duplicate"}
 
     if message.sender_type == "app":
         return {"ok": True, "ignored": "self_message"}

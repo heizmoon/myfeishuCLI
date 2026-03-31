@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     port: int = 8000
 
     feishu_bots: str = ""
+    dedupe_db_path: str = ".data/processed_events.db"
 
 
 settings = Settings()

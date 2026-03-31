@@ -15,6 +15,7 @@ class FeishuAPIError(RuntimeError):
 
 @dataclass
 class FeishuMessage:
+    event_id: str
     message_id: str
     chat_id: str
     chat_type: str
@@ -168,6 +169,7 @@ def extract_message(payload: dict) -> FeishuMessage | None:
         return None
 
     return FeishuMessage(
+        event_id=header.get("event_id", ""),
         message_id=message.get("message_id", ""),
         chat_id=message.get("chat_id", ""),
         chat_type=message.get("chat_type", ""),
