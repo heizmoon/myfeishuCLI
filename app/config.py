@@ -17,7 +17,7 @@ class BotProfile:
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     feishu_app_id: str = ""
     feishu_app_secret: str = ""
