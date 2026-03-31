@@ -101,8 +101,10 @@ async def feishu_webhook(request: Request, bot_slug: str | None = None) -> dict:
     if message.sender_type == "app":
         return {"ok": True, "ignored": "self_message"}
 
-    if message.chat_type == "group" and bot.require_mention and bot.app_id not in message.mention_ids:
-        return {"ok": True, "ignored": "mention_required"}
+    if message.chat_type == "group" and bot.require_mention:
+        bot_info = await feishu_client.get_bot_info()
+        if bot_info.get("open_id") not in message.mention_ids:
+            return {"ok": True, "ignored": "mention_required"}
 
     route = route_for_bot(bot, message.text)
     if not route.prompt:

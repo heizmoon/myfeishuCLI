@@ -12,6 +12,8 @@ from app.config import BotProfile, settings
 
 logger = logging.getLogger(__name__)
 
+_bot_info_cache: dict[str, dict] = {}
+
 
 class FeishuAPIError(RuntimeError):
     pass
@@ -60,6 +62,26 @@ class FeishuClient:
         if self._tenant_token and datetime.now(timezone.utc) < self._tenant_token_expires_at:
             return self._tenant_token
         return await self._refresh_tenant_access_token()
+
+    async def get_bot_info(self) -> dict:
+        global _bot_info_cache
+        if self.bot.app_id in _bot_info_cache:
+            return _bot_info_cache[self.bot.app_id]
+
+        token = await self.get_tenant_access_token()
+        headers = {"Authorization": f"Bearer {token}"}
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.get(
+                f"{settings.feishu_base_url.rstrip('/')}/open-apis/bot/v3/info",
+                headers=headers,
+            )
+        response.raise_for_status()
+        data = response.json()
+        if data.get("code") != 0:
+            raise FeishuAPIError(f"Failed to fetch bot info: {data}")
+
+        _bot_info_cache[self.bot.app_id] = data["bot"]
+        return data["bot"]
 
     async def send_text_message(self, chat_id: str, text: str) -> None:
         token = await self.get_tenant_access_token()
