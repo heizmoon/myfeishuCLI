@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 import httpx
 
-from app.config import settings
+from app.config import BotProfile, settings
 
 
 class FeishuAPIError(RuntimeError):
@@ -17,19 +17,22 @@ class FeishuAPIError(RuntimeError):
 class FeishuMessage:
     message_id: str
     chat_id: str
+    chat_type: str
     text: str
     sender_type: str
+    mention_ids: set[str]
 
 
 class FeishuClient:
-    def __init__(self) -> None:
+    def __init__(self, bot: BotProfile) -> None:
+        self.bot = bot
         self._tenant_token = ""
         self._tenant_token_expires_at = datetime.min.replace(tzinfo=timezone.utc)
 
     async def _refresh_tenant_access_token(self) -> str:
         payload = {
-            "app_id": settings.feishu_app_id,
-            "app_secret": settings.feishu_app_secret,
+            "app_id": self.bot.app_id,
+            "app_secret": self.bot.app_secret,
         }
         async with httpx.AsyncClient(timeout=30) as client:
             response = await client.post(
@@ -121,10 +124,10 @@ class FeishuClient:
             raise FeishuAPIError(f"Failed to send image message: {data}")
 
 
-def verify_token(payload: dict) -> bool:
+def verify_token(payload: dict, verification_token: str) -> bool:
     token = payload.get("token")
     if token:
-        return token == settings.feishu_verification_token
+        return token == verification_token
 
     header = payload.get("header") or {}
     event = payload.get("event") or {}
@@ -150,12 +153,25 @@ def extract_message(payload: dict) -> FeishuMessage | None:
         content = {}
 
     text = (content.get("text") or "").strip()
+    mention_ids: set[str] = set()
+    for mention in message.get("mentions") or []:
+        key = mention.get("key")
+        if key:
+            text = text.replace(key, " ")
+        mention_id = mention.get("id") or {}
+        if isinstance(mention_id, dict):
+            for value in mention_id.values():
+                if isinstance(value, str) and value:
+                    mention_ids.add(value)
+    text = " ".join(text.split())
     if not text:
         return None
 
     return FeishuMessage(
         message_id=message.get("message_id", ""),
         chat_id=message.get("chat_id", ""),
+        chat_type=message.get("chat_type", ""),
         text=text,
         sender_type=sender.get("sender_type", ""),
+        mention_ids=mention_ids,
     )

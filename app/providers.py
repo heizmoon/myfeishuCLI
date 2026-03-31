@@ -27,14 +27,17 @@ class ImageProviderResult:
     image_bytes: bytes
 
 
-async def ask_openai(prompt: str) -> ProviderResult:
+async def ask_openai(prompt: str, *, system_prompt: str | None = None) -> ProviderResult:
     if not settings.openai_api_key:
         raise ProviderError("OPENAI_API_KEY is not configured.")
 
     payload = {
         "model": settings.openai_model,
         "input": [
-            {"role": "system", "content": [{"type": "input_text", "text": settings.bot_system_prompt}]},
+            {
+                "role": "system",
+                "content": [{"type": "input_text", "text": system_prompt or settings.bot_system_prompt}],
+            },
             {"role": "user", "content": [{"type": "input_text", "text": prompt}]},
         ],
     }
@@ -58,12 +61,12 @@ async def ask_openai(prompt: str) -> ProviderResult:
     return ProviderResult(provider="openai", model=settings.openai_model, text=text)
 
 
-async def ask_gemini(prompt: str) -> ProviderResult:
+async def ask_gemini(prompt: str, *, system_prompt: str | None = None) -> ProviderResult:
     if not settings.gemini_api_key:
         raise ProviderError("GEMINI_API_KEY is not configured.")
 
     payload = {
-        "system_instruction": {"parts": [{"text": settings.bot_system_prompt}]},
+        "system_instruction": {"parts": [{"text": system_prompt or settings.bot_system_prompt}]},
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
     }
 
@@ -93,12 +96,12 @@ async def ask_gemini(prompt: str) -> ProviderResult:
     return ProviderResult(provider="gemini", model=settings.gemini_model, text=text)
 
 
-async def generate_gemini_image(prompt: str) -> ImageProviderResult:
+async def generate_gemini_image(prompt: str, *, system_prompt: str | None = None) -> ImageProviderResult:
     if not settings.gemini_api_key:
         raise ProviderError("GEMINI_API_KEY is not configured.")
 
     payload = {
-        "system_instruction": {"parts": [{"text": settings.bot_system_prompt}]},
+        "system_instruction": {"parts": [{"text": system_prompt or settings.bot_system_prompt}]},
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {
             "responseModalities": ["TEXT", "IMAGE"],
@@ -135,10 +138,10 @@ async def generate_gemini_image(prompt: str) -> ImageProviderResult:
     raise ProviderError("Gemini image generation returned no image data.")
 
 
-async def ask_provider(provider: str, prompt: str) -> ProviderResult:
+async def ask_provider(provider: str, prompt: str, *, system_prompt: str | None = None) -> ProviderResult:
     normalized = provider.strip().lower()
     if normalized == "openai":
-        return await ask_openai(prompt)
+        return await ask_openai(prompt, system_prompt=system_prompt)
     if normalized == "gemini":
-        return await ask_gemini(prompt)
+        return await ask_gemini(prompt, system_prompt=system_prompt)
     raise ProviderError(f"Unsupported provider: {provider}")

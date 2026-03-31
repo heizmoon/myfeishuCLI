@@ -1,65 +1,82 @@
 # Feishu Multi-Model Bot
 
-一个最小可用的飞书群机器人服务，支持文本对话和 Gemini 生图。
+Supports two deployment styles:
 
-## 支持的群指令
+- Single bot: one Feishu bot, route by message prefix such as `gpt:` or `gemini:`
+- Multi bot: multiple Feishu bots in the same group, each with its own avatar and callback path
 
-- `gpt: 你的问题` 或 `/gpt 你的问题` -> OpenAI 文本回复
-- `gemini: 你的问题` 或 `/gemini 你的问题` -> Gemini 文本回复
-- `gemini-img: 你的提示词` 或 `/gemini-img 你的提示词` -> Gemini 生图并发到群里
-- 不带前缀时走 `.env` 里的 `BOT_DEFAULT_PROVIDER`
+## Single-bot commands
 
-## 安装
+- `gpt: ...` -> OpenAI text
+- `gemini: ...` -> Gemini text
+- `gemini-img: ...` -> Gemini image generation
+
+## Multi-bot mode
+
+Create multiple Feishu apps, for example:
+
+- `GPT`
+- `Gemini`
+- `Painter`
+
+Point each app to a different callback path:
+
+- `https://bot.120061019.xyz/webhook/feishu/gpt`
+- `https://bot.120061019.xyz/webhook/feishu/gemini`
+- `https://bot.120061019.xyz/webhook/feishu/painter`
+
+Then configure matching environment variables:
+
+- `BOT_GPT_FEISHU_APP_ID`
+- `BOT_GPT_FEISHU_APP_SECRET`
+- `BOT_GPT_FEISHU_VERIFICATION_TOKEN`
+- `BOT_GEMINI_*`
+- `BOT_PAINTER_*`
+
+Recommended defaults:
+
+- `BOT_GPT_DEFAULT_PROVIDER=openai`
+- `BOT_GEMINI_DEFAULT_PROVIDER=gemini`
+- `BOT_PAINTER_DEFAULT_MODE=image`
+
+In group chats, named bots only reply when they are `@` mentioned.
+
+## Setup
 
 ```powershell
 uv sync
-```
-
-## 环境变量
-
-先复制模板：
-
-```powershell
 Copy-Item .env.example .env
+uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-至少填好这些值：
+## Required env vars
+
+- `OPENAI_API_KEY`
+- `GEMINI_API_KEY`
+
+For single-bot mode:
 
 - `FEISHU_APP_ID`
 - `FEISHU_APP_SECRET`
 - `FEISHU_VERIFICATION_TOKEN`
-- `OPENAI_API_KEY`
-- `GEMINI_API_KEY`
 
-Gemini 生图默认使用：
+For multi-bot mode:
 
-- `GEMINI_IMAGE_MODEL=gemini-2.5-flash-image`
+- `FEISHU_BOTS=gpt,gemini,painter`
+- each `BOT_<NAME>_...` credential set
 
-## 启动
+## Example prompts
 
-```powershell
-uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-## 飞书配置
-
-在飞书开放平台中：
-
-1. 开启事件订阅
-2. 请求地址填 `https://你的域名/webhook/feishu`
-3. `Verification Token` 与 `.env` 中保持一致
-4. 添加事件 `im.message.receive_v1`
-5. 开通消息相关权限
-6. 把机器人拉进测试群
-
-## 群里怎么用
+Single bot:
 
 ```text
-gpt: 帮我总结今天的讨论
-gemini: 给我一个更激进的方案
-gemini-img: 画一只戴墨镜的柴犬，像旅行海报
+gpt: summarize this discussion
+gemini: give me a more aggressive plan
+gemini-img: draw a shiba inu travel poster
 ```
 
-## 说明
+Multi bot:
 
-当前实现是“一个飞书机器人，背后接多个模型”。如果你想让群里出现多个不同头像的机器人，需要在飞书开放平台再创建多个应用。
+- `@GPT summarize this discussion`
+- `@Gemini give me a more aggressive plan`
+- `@Painter draw a shiba inu travel poster`
