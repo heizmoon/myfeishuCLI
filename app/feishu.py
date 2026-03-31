@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 import httpx
 
 from app.config import BotProfile, settings
+
+
+logger = logging.getLogger(__name__)
 
 
 class FeishuAPIError(RuntimeError):
@@ -165,6 +169,13 @@ def extract_message(payload: dict) -> FeishuMessage | None:
                 if isinstance(value, str) and value:
                     mention_ids.add(value)
     text = " ".join(text.split())
+    logger.info(
+        "feishu_message_debug chat_type=%s message_id=%s mentions=%s raw_content=%s",
+        message.get("chat_type", ""),
+        message.get("message_id", ""),
+        message.get("mentions") or [],
+        message.get("content") or "",
+    )
     if not text:
         return None
 
